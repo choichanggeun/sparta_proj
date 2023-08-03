@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 const indexRouter = require('./routes/index');
 
 app.use(express.json()); // 모든 코드에서 request안에 있는 body데이터를 사용함 (req.body)
+app.use(cookieParser());
 
 app.use('/api', indexRouter);
 

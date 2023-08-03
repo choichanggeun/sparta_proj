@@ -30,9 +30,16 @@ module.exports = (sequelize, DataTypes) => {
       },
       nickname: {
         type: DataTypes.STRING,
+        allowNull: false,
+        Unique: true, //Lv2.lv3 과제에서 nickname 중복불가라는 요구사항이 있음
+      },
+      email: {
+        type: DataTypes.STRING,
+        allowNull: false,
       },
       password: {
         type: DataTypes.STRING,
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,
@@ -43,6 +50,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
       },
     },
+
     {
       sequelize,
       modelName: 'Users',
