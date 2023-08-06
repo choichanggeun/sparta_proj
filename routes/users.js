@@ -63,6 +63,7 @@ router.post('/signup', async (req, res) => {
   });
 });
 
+//로그인
 router.post('/login', async (req, res) => {
   const { nickname, password } = req.body;
   const user = await Users.findOne({ where: { nickname: nickname } });

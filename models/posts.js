@@ -14,8 +14,21 @@ module.exports = (sequelize, DataTypes) => {
         targetKey: 'userId', //해당 모델(Users)의 기본 키
         foreignKey: 'UserId', // Posts에서 외래 키로 설정 될 키 외래키는 대문자를 사용
       });
+
+      this.hasMany(models.Comments, {
+        //comments 모델에게 1:N관계를 맺음
+        sourceKey: 'postId',
+        foreignKey: 'PostId',
+      });
+
+      this.hasMany(models.Likes, {
+        //likes 모델에게 1:N관계를 맺음
+        sourceKey: 'postId',
+        foreignKey: 'PostId',
+      });
     }
   }
+
   Posts.init(
     {
       postId: {
@@ -34,10 +47,16 @@ module.exports = (sequelize, DataTypes) => {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
+
       content: {
         type: DataTypes.STRING,
       },
+
       title: {
+        type: DataTypes.STRING,
+      },
+      like: {
+        defaultValue: 0,
         type: DataTypes.STRING,
       },
       createdAt: {

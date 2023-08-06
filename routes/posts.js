@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middlewares/auth');
-const { Posts, Users } = require('../models');
+const { Posts, Likes, Users } = require('../models');
 
 /*게시글 작성 API
     토큰을 검사하여, 유효한 토큰일 경우에만 게시글 작성 가능
@@ -9,34 +9,46 @@ const { Posts, Users } = require('../models');
 
 router.post('/', auth, async (req, res) => {
   //토큰을 검사하기 위해 auth 미들웨어를 들렸다가 비동기 처리를 진행
+  const { userId } = res.locals.user;
   const { title, content } = req.body;
-
-  if (!title || !content) {
-    res.status(400).send('제목 또는 작성 내용을 입력하세요.');
-  } else {
-    try {
-      await Posts.create({
-        UserId: res.locals.user.userId,
-        title,
-        content,
-      });
-
-      res.json({ message: '게시글을 생성하였습니다.' });
-    } catch (err) {
-      console.error(err);
-      res.status(500).send('게시글 생성 중 오류가 발생했습니다.');
+  const posts = await Posts.findOne({ where: userId });
+  try {
+    if (!res.locals.user) {
+      return res.status(403).json({ errorMessage: '로그인이 필요한 기능입니다.' });
     }
+    //게시글 데이터 유효성 검사
+    if (!title) {
+      return res.status(412).json({ errorMessage: '게시글 제목이 형식이 일치하지 않습니다.' });
+    }
+    if (!content) {
+      return res.status(412).json({ errorMessage: '게시글 제목이 형식이 일치하지 않습니다.' });
+    }
+    //입력한 정보로 게시물 생성
+    const createPost = await Posts.create({
+      UserId: userId,
+      title,
+      content,
+    });
+    return res.status(200).json({ data: '게시글 작성에 성공하였습니다.' });
+  } catch (error) {
+    console.log(error);
+    // 예외 종류에 따라 에러 메시지 설정
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(403).json({ errorMessage: '전달된 쿠키에서 오류가 발생하였습니다.' });
+    }
+
+    return res.status(400).json({ errorMessage: '게시글 작성에 실패하였습니다.' });
   }
 });
 
-// 전체 게시글 목록 조회 API
-// 제목, 작성자명(nickname), 작성 날짜를 조회하기
+//전체 게시글 목록 조회 API
+//제목, 작성자명(nickname), 작성 날짜, 좋아요 갯수를 조회하기
 // 작성 날짜 기준으로 내림차순 정렬하기
 
 router.get('/', async (req, res) => {
   try {
     const posts = await Posts.findAll({
-      attributes: ['title', 'createdAt'], //데이터베이스에 저장된 컬럼들중 조회할 컬럼들만 지정
+      attributes: ['postId', 'UserId', 'title', 'createdAt', 'like'], //데이터베이스에 저장된 컬럼들중 조회할 컬럼들만 지정
       include: {
         //Users에 있는 컬럼중 nickname이라는 값을 가지고 와서 조회를 해야 함
         model: Users, // Users를 참조
@@ -50,14 +62,16 @@ router.get('/', async (req, res) => {
     res.status(500).send('데이터 조회 중 오류가 발생했습니다.');
   }
 });
-// 제목, 작성자명(nickname), 작성 날짜, 작성 내용을 조회하기
-// (검색 기능이 아닙니다. 간단한 게시글 조회만 구현해주세요.)
+
+//게시글 상세조회 API
+// 제목, 작성자명(nickname), 작성 날짜, 작성 내용, 좋아요 갯수를 조회하기
+//(검색 기능이 아닙니다. 간단한 게시글 조회만 구현해주세요.)
 router.get('/:postId', async (req, res) => {
   try {
     const { postId } = req.params;
     const posts = await Posts.findOne({
-      where: { postId: postId },
-      attributes: ['title', 'content', 'createdAt'],
+      where: { postId },
+      attributes: ['postId', 'title', 'like', 'content', 'createdAt'],
       include: {
         model: Users,
         attributes: ['nickname'],
